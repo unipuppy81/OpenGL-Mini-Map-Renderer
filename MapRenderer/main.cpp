@@ -8,8 +8,10 @@
 
 #include "Camera.hpp"
 #include "Renderer.hpp"
+#include "GeoJsonLoader.hpp"
 
 #include <iostream>
+#include <filesystem>
 
 void framebufferCallback(GLFWwindow*, int width, int height)
 {
@@ -32,6 +34,7 @@ int main()
 
     if (!window)
     {
+        std::cout << "Failed to create GLFW window\n";
         glfwTerminate();
         return -1;
     }
@@ -40,6 +43,7 @@ int main()
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
+        std::cout << "Failed to initialize GLAD\n";
         glfwTerminate();
         return -1;
     }
@@ -54,47 +58,81 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebufferCallback);
 
     glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y)
-    {
-        Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
-        camera->processMouse(x, y);
-    });
+        {
+            Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+            camera->processMouse(x, y);
+        });
 
     glfwSetScrollCallback(window, [](GLFWwindow* window, double, double y)
-    {
-        Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
-        camera->processScroll(y);
-    });
+        {
+            Camera* camera = static_cast<Camera*>(glfwGetWindowUserPointer(window));
+            camera->processScroll(y);
+        });
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    Renderer renderer;
-    float lastFrame = 0.0f;
+    std::cout << "Current path: " << std::filesystem::current_path() << '\n';
+    std::cout << "GeoJSON exists: " << std::filesystem::exists("data/map.geojson") << '\n';
 
-    while (!glfwWindowShouldClose(window))
+
+
+    // GeoJSON Load
+    MapData mapData;
+
+
+    std::cout << std::filesystem::current_path() << '\n';
+    std::cout << std::filesystem::exists("../data/map.geojson") << '\n';
+
+    try
     {
-        float currentFrame = (float)glfwGetTime();
-        float deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        mapData = GeoJsonLoader::load("../data/map.geojson");
 
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
+        std::cout << "Buildings: " << mapData.buildings.size() << '\n';
+        std::cout << "Roads: " << mapData.roads.size() << '\n';
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << e.what() << '\n';
+    }
 
-        camera.processInput(window, deltaTime);
+    {
+        Renderer renderer;
 
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        float lastFrame = 0.0f;
 
-        int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
+        while (!glfwWindowShouldClose(window))
+        {
+            float currentFrame = (float)glfwGetTime();
+            float deltaTime = currentFrame - lastFrame;
+            lastFrame = currentFrame;
 
-        float aspect = height == 0 ? 1.0f : (float)width / (float)height;
+            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+                glfwSetWindowShouldClose(window, true);
 
-        glm::mat4 view = camera.getViewMatrix();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), aspect, 0.1f, 100.0f);
+            camera.processInput(window, deltaTime);
 
-        renderer.draw(view, projection);
+            glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+            int width, height;
+            glfwGetFramebufferSize(window, &width, &height);
+
+            float aspect = height == 0 ? 1.0f : (float)width / (float)height;
+
+            glm::mat4 view = camera.getViewMatrix();
+
+            glm::mat4 projection = glm::perspective(
+                glm::radians(camera.getFov()),
+                aspect,
+                0.1f,
+                100.0f
+            );
+
+            renderer.draw(view, projection);
+
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+        }
     }
 
     glfwTerminate();

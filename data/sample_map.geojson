@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"building":"yes","height":18},"geometry":{"type":"Polygon","coordinates":[[[127.00010,37.50010],[127.00038,37.50010],[127.00038,37.50030],[127.00010,37.50030],[127.00010,37.50010]]]}},
+    {"type":"Feature","properties":{"building":"yes","building:levels":8},"geometry":{"type":"Polygon","coordinates":[[[127.00053,37.50008],[127.00080,37.50008],[127.00080,37.50034],[127.00053,37.50034],[127.00053,37.50008]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":12},"geometry":{"type":"Polygon","coordinates":[[[127.00104,37.50012],[127.00125,37.50012],[127.00132,37.50027],[127.00118,37.50039],[127.00098,37.50031],[127.00104,37.50012]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":32},"geometry":{"type":"Polygon","coordinates":[[[127.00150,37.50010],[127.00178,37.50010],[127.00178,37.50036],[127.00150,37.50036],[127.00150,37.50010]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":15},"geometry":{"type":"Polygon","coordinates":[[[127.00012,37.50066],[127.00036,37.50066],[127.00036,37.50088],[127.00012,37.50088],[127.00012,37.50066]]]}},
+    {"type":"Feature","properties":{"building":"yes","building:levels":6},"geometry":{"type":"Polygon","coordinates":[[[127.00058,37.50061],[127.00088,37.50061],[127.00088,37.50091],[127.00058,37.50091],[127.00058,37.50061]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":28},"geometry":{"type":"Polygon","coordinates":[[[127.00109,37.50064],[127.00136,37.50064],[127.00136,37.50089],[127.00109,37.50089],[127.00109,37.50064]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":10},"geometry":{"type":"Polygon","coordinates":[[[127.00154,37.50061],[127.00182,37.50061],[127.00182,37.50082],[127.00168,37.50090],[127.00154,37.50082],[127.00154,37.50061]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":21},"geometry":{"type":"Polygon","coordinates":[[[127.00018,37.50115],[127.00042,37.50115],[127.00042,37.50139],[127.00018,37.50139],[127.00018,37.50115]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":36},"geometry":{"type":"Polygon","coordinates":[[[127.00066,37.50112],[127.00088,37.50112],[127.00088,37.50140],[127.00066,37.50140],[127.00066,37.50112]]]}},
+    {"type":"Feature","properties":{"building":"yes","building:levels":5},"geometry":{"type":"Polygon","coordinates":[[[127.00120,37.50114],[127.00140,37.50114],[127.00140,37.50136],[127.00120,37.50136],[127.00120,37.50114]]]}},
+    {"type":"Feature","properties":{"building":"yes","height":19},"geometry":{"type":"Polygon","coordinates":[[[127.00165,37.50111],[127.00191,37.50111],[127.00191,37.50140],[127.00165,37.50140],[127.00165,37.50111]]]}},
+    {"type":"Feature","properties":{"highway":"primary","width":7},"geometry":{"type":"LineString","coordinates":[[126.99985,37.50045],[127.00048,37.50045],[127.00095,37.50045],[127.00145,37.50045],[127.00206,37.50045]]}},
+    {"type":"Feature","properties":{"highway":"secondary"},"geometry":{"type":"LineString","coordinates":[[126.99985,37.50095],[127.00048,37.50095],[127.00095,37.50095],[127.00145,37.50095],[127.00206,37.50095]]}},
+    {"type":"Feature","properties":{"highway":"residential"},"geometry":{"type":"LineString","coordinates":[[126.99985,37.50145],[127.00048,37.50145],[127.00095,37.50145],[127.00145,37.50145],[127.00206,37.50145]]}},
+    {"type":"Feature","properties":{"highway":"residential"},"geometry":{"type":"LineString","coordinates":[[127.00048,37.49995],[127.00048,37.50045],[127.00048,37.50095],[127.00048,37.50145],[127.00048,37.50155]]}},
+    {"type":"Feature","properties":{"highway":"residential","width":4},"geometry":{"type":"LineString","coordinates":[[127.00095,37.49995],[127.00095,37.50045],[127.00095,37.50095],[127.00095,37.50145],[127.00095,37.50155]]}},
+    {"type":"Feature","properties":{"highway":"residential"},"geometry":{"type":"LineString","coordinates":[[127.00145,37.49995],[127.00145,37.50045],[127.00145,37.50095],[127.00145,37.50145],[127.00145,37.50155]]}}
+  ]
+}

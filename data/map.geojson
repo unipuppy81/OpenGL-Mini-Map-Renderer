@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "height": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [ 127.0000, 37.5000 ],
+            [ 127.0010, 37.5000 ],
+            [ 127.0010, 37.5010 ],
+            [ 127.0000, 37.5010 ],
+            [ 127.0000, 37.5000 ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "width": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [ 127.0000, 37.5005 ],
+          [ 127.0010, 37.5005 ],
+          [ 127.0020, 37.5010 ]
+        ]
+      }
+    }
+  ]
+}
