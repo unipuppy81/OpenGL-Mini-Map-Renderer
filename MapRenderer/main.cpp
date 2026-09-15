@@ -10,6 +10,7 @@
 #include "Renderer.hpp"
 #include "GeoJsonLoader.hpp"
 #include "Geometry.hpp"
+#include "RoutePlanner.hpp"
 
 #include <iostream>
 #include <filesystem>
@@ -82,6 +83,7 @@ int main()
 
     MapData mapData;
     TileManager tileManager;
+    PlannedRoute planned;
 
     try
     {
@@ -91,6 +93,11 @@ int main()
         cout << "Roads: " << mapData.roads.size() << '\n';
 
         tileManager.build(mapData);
+
+        planned = RoutePlanner().plan(mapData, mapData.roads.front().points.front(), mapData.buildings.size() - 1);
+
+        cout << "Route points: " << planned.roadPath.size() << '\n';
+        cout << "Destination: " << planned.destinationBuilding.x << ", " << planned.destinationBuilding.y << '\n';
 
         for (const MapTile& tile : tileManager.getTiles())
         {
@@ -106,8 +113,18 @@ int main()
 
     {
         Renderer renderer(tileManager.getTiles());
+        renderer.uploadRoute(planned.roadPath, 3.2f);
+        renderer.uploadDestination(planned.destinationBuilding, planned.destinationHeight);
 
         float lastFrame = 0.0f;
+
+        bool cullingEnabled = true;
+        bool fPressed = false;
+
+        double statTime = glfwGetTime();
+        double accumulatedTime = 0.0;
+        int frameCount = 0;
+        double averageMs = 0.0;
 
         while (!glfwWindowShouldClose(window))
         {
@@ -117,6 +134,15 @@ int main()
 
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                 glfwSetWindowShouldClose(window, true);
+
+            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && !fPressed)
+            {
+                cullingEnabled = !cullingEnabled;
+                fPressed = true;
+            }
+
+            if (glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE)
+                fPressed = false;
 
             camera.processInput(window, deltaTime);
 
@@ -129,22 +155,33 @@ int main()
             float aspect = height == 0 ? 1.0f : (float)width / (float)height;
 
             glm::mat4 view = camera.getViewMatrix();
+            glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), aspect, 0.1f, 1000.0f);
 
-            glm::mat4 projection = glm::perspective(
-                glm::radians(camera.getFov()),
-                aspect,
-                0.1f,
-                1000.0f
-            );
+            FrameStats stats = renderer.draw(tileManager.getTiles(), view, projection, cullingEnabled);
 
-            FrameStats stats = renderer.draw(tileManager.getTiles(), view, projection);
+            accumulatedTime += deltaTime;
+            frameCount++;
+
+            double now = glfwGetTime();
+
+            if (now - statTime >= 0.5)
+            {
+                averageMs = accumulatedTime / frameCount * 1000.0;
+                accumulatedTime = 0.0;
+                frameCount = 0;
+                statTime = now;
+            }
 
             ostringstream title;
+
             title << "Map Renderer"
+                << " | Culling " << (cullingEnabled ? "ON" : "OFF")
                 << " | Tiles " << tileManager.getTiles().size()
                 << " | Visible " << stats.visibleTiles
                 << " | Draws " << stats.drawCalls
-                << " | Vertices " << stats.renderedVertices;
+                << " | Vertices " << stats.renderedVertices
+                << " | FPS " << (averageMs > 0.0 ? 1000.0 / averageMs : 0.0)
+                << " | " << averageMs << " ms";
 
             glfwSetWindowTitle(window, title.str().c_str());
 

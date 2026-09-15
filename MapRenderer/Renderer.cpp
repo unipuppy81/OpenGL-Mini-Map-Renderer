@@ -77,6 +77,14 @@ Renderer::~Renderer()
         glDeleteVertexArrays(1, &mesh.VAO);
         glDeleteBuffers(1, &mesh.VBO);
         glDeleteBuffers(1, &mesh.EBO);
+
+        glDeleteVertexArrays(1, &routeMesh.VAO);
+        glDeleteBuffers(1, &routeMesh.VBO);
+        glDeleteBuffers(1, &routeMesh.EBO);
+
+        glDeleteVertexArrays(1, &destinationMesh.VAO);
+        glDeleteBuffers(1, &destinationMesh.VBO);
+        glDeleteBuffers(1, &destinationMesh.EBO);
     }
 
     glDeleteProgram(shaderProgram);
@@ -102,7 +110,7 @@ unsigned int Renderer::compileShader(unsigned int type, const char* source)
     return shader;
 }
 
-FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection)
+FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection, bool cullingEnabled)
 {
     FrameStats stats;
 
@@ -114,9 +122,11 @@ FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, c
 
     for (size_t i = 0; i < meshes.size(); ++i)
     {
-        if (!frustum.intersects(tiles[i].bounds)) continue;
+        if (cullingEnabled && !frustum.intersects(tiles[i].bounds)) continue;
 
         stats.visibleTiles++;
+        stats.renderedBuildings += tiles[i].buildingCount;
+        stats.renderedRoadSegments += tiles[i].roadSegmentCount;
 
         const GpuMesh& mesh = meshes[i];
         if (mesh.indexCount == 0) continue;
@@ -128,8 +138,26 @@ FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, c
         stats.renderedVertices += mesh.vertexCount;
     }
 
+    if (routeMesh.indexCount > 0) 
+    {
+        glBindVertexArray(routeMesh.VAO);
+        glDrawElements(GL_TRIANGLES, routeMesh.indexCount, GL_UNSIGNED_INT, nullptr);
+
+        stats.drawCalls++;
+        stats.renderedVertices += routeMesh.vertexCount;
+    }
+
+    if (destinationMesh.indexCount > 0) {
+        glBindVertexArray(destinationMesh.VAO);
+        glDrawElements(GL_TRIANGLES, destinationMesh.indexCount, GL_UNSIGNED_INT, nullptr);
+
+        stats.drawCalls++;
+        stats.renderedVertices += destinationMesh.vertexCount;
+    }
+
     return stats;
 }
+
 void Renderer::uploadMesh(GpuMesh& gpuMesh, const MeshData& mesh)
 {
     gpuMesh.indexCount = static_cast<int>(mesh.indices.size());
@@ -156,4 +184,48 @@ void Renderer::uploadMesh(GpuMesh& gpuMesh, const MeshData& mesh)
     glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
+}
+
+void Renderer::uploadRoute(const vector<glm::vec2>& points, float width)
+{
+    MeshData route;
+    glm::vec3 color(1.0f, 0.48f, 0.08f);
+    float y = 0.16f;
+
+    for (size_t i = 1; i < points.size(); ++i) {
+        glm::vec2 delta = points[i] - points[i - 1];
+        if (glm::dot(delta, delta) < 0.0001f) continue;
+
+        glm::vec2 offset = glm::normalize(glm::vec2(-delta.y, delta.x)) * width * 0.5f;
+        unsigned int base = static_cast<unsigned int>(route.vertices.size());
+
+        route.vertices.push_back({ {points[i - 1].x + offset.x, y, points[i - 1].y + offset.y}, {0, 1, 0}, color });
+        route.vertices.push_back({ {points[i - 1].x - offset.x, y, points[i - 1].y - offset.y}, {0, 1, 0}, color });
+        route.vertices.push_back({ {points[i].x - offset.x, y, points[i].y - offset.y}, {0, 1, 0}, color });
+        route.vertices.push_back({ {points[i].x + offset.x, y, points[i].y + offset.y}, {0, 1, 0}, color });
+
+        route.indices.insert(route.indices.end(), { base, base + 1, base + 2, base, base + 2, base + 3 });
+    }
+
+    uploadMesh(routeMesh, route);
+}
+
+void Renderer::uploadDestination(glm::vec2 position, float buildingHeight)
+{
+    float baseY = buildingHeight + 4.0f;
+    glm::vec3 color(1.0f, 0.12f, 0.24f);
+
+    MeshData marker;
+
+    marker.vertices = {
+        {{position.x, baseY + 8.0f, position.y}, {0, 1, 0}, color},
+        {{position.x - 4.0f, baseY, position.y - 4.0f}, {0, 1, 0}, color},
+        {{position.x + 4.0f, baseY, position.y - 4.0f}, {0, 1, 0}, color},
+        {{position.x + 4.0f, baseY, position.y + 4.0f}, {0, 1, 0}, color},
+        {{position.x - 4.0f, baseY, position.y + 4.0f}, {0, 1, 0}, color}
+    };
+
+    marker.indices = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1 };
+
+    uploadMesh(destinationMesh, marker);
 }
