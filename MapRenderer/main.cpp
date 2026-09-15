@@ -80,7 +80,7 @@ int main()
 
 
     MapData mapData;
-    MeshData buildingMesh;
+    MeshData mapMesh;
 
     try
     {
@@ -89,13 +89,20 @@ int main()
         cout << "Buildings: " << mapData.buildings.size() << '\n';
         cout << "Roads: " << mapData.roads.size() << '\n';
 
-        if (!mapData.buildings.empty())
-        {
-            buildingMesh = Geometry::createBuilding(mapData.buildings[0]);
+        TileManager tileManager;
+        tileManager.build(mapData);
 
-            cout << "Vertices: " << buildingMesh.vertices.size() << '\n';
-            cout << "Indices: " << buildingMesh.indices.size() << '\n';
+        for (const MapTile& tile : tileManager.getTiles())
+        {
+            cout << "Tile: " << tile.coordinate.x << ", " << tile.coordinate.y
+                << " Buildings: " << tile.buildingCount
+                << " Roads: " << tile.roadSegmentCount << '\n';
+
+            mapMesh.append(tile.mesh);
         }
+
+        cout << "Total vertices: " << mapMesh.vertices.size() << '\n';
+        cout << "Total indices: " << mapMesh.indices.size() << '\n';
     }
     catch (const exception& e)
     {
@@ -103,7 +110,7 @@ int main()
     }
 
     {
-        Renderer renderer(buildingMesh);
+        Renderer renderer(mapMesh);
 
         float lastFrame = 0.0f;
 

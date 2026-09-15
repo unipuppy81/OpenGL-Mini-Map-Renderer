@@ -3,6 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 
@@ -70,4 +71,136 @@ MeshData Geometry::createBuilding(const BuildingData& building)
     }
 
     return mesh;
+}
+
+MeshData Geometry::createRoad(const RoadData& road)
+{
+    MeshData mesh;
+
+    for (size_t i = 0; i + 1 < road.points.size(); ++i)
+        mesh.append(createRoadSegment(road.points[i], road.points[i + 1], road.width));
+
+    return mesh;
+}
+
+MeshData Geometry::createRoadSegment(glm::vec2 a, glm::vec2 b, float width)
+{
+    MeshData mesh;
+
+    glm::vec2 direction = b - a;
+    if (glm::length(direction) < 0.0001f) return mesh;
+
+    direction = glm::normalize(direction);
+
+    glm::vec2 perpendicular(-direction.y, direction.x);
+    glm::vec2 offset = perpendicular * width * 0.5f;
+
+    glm::vec2 leftA = a + offset;
+    glm::vec2 rightA = a - offset;
+    glm::vec2 leftB = b + offset;
+    glm::vec2 rightB = b - offset;
+
+    glm::vec3 color(0.18f, 0.18f, 0.20f);
+
+    mesh.vertices = {
+        {{leftA.x, 0.05f, leftA.y}, {0, 1, 0}, color},
+        {{rightA.x, 0.05f, rightA.y}, {0, 1, 0}, color},
+        {{rightB.x, 0.05f, rightB.y}, {0, 1, 0}, color},
+        {{leftB.x, 0.05f, leftB.y}, {0, 1, 0}, color}
+    };
+
+    mesh.indices = { 0, 1, 2, 0, 2, 3 };
+
+    return mesh;
+}
+
+TileManager::TileManager(float tileSize) : tileSize(tileSize)
+{
+}
+
+const vector<MapTile>& TileManager::getTiles() const
+{
+    return tiles;
+}
+
+glm::ivec2 TileManager::getCoordinate(glm::vec2 point) const
+{
+    return {
+        static_cast<int>(floor(point.x / tileSize)),
+        static_cast<int>(floor(point.y / tileSize))
+    };
+}
+
+MapTile& TileManager::getOrCreate(glm::ivec2 coordinate)
+{
+    unsigned long long key =
+        (static_cast<unsigned long long>(static_cast<unsigned int>(coordinate.x)) << 32) |
+        static_cast<unsigned int>(coordinate.y);
+
+    auto found = tileLookup.find(key);
+    if (found != tileLookup.end()) return tiles[found->second];
+
+    MapTile tile;
+    tile.coordinate = coordinate;
+
+    tile.bounds.min = {
+        coordinate.x * tileSize,
+        0.0f,
+        coordinate.y * tileSize
+    };
+
+    tile.bounds.max = {
+        (coordinate.x + 1) * tileSize,
+        1.0f,
+        (coordinate.y + 1) * tileSize
+    };
+
+    size_t index = tiles.size();
+
+    tiles.push_back(tile);
+    tileLookup[key] = index;
+
+    return tiles.back();
+}
+
+
+void TileManager::build(const MapData& mapData)
+{
+    tiles.clear();
+    tileLookup.clear();
+
+    for (const BuildingData& building : mapData.buildings)
+    {
+        if (building.polygon.empty()) continue;
+
+        glm::vec2 center(0.0f);
+
+        for (glm::vec2 point : building.polygon)
+            center += point;
+
+        center /= static_cast<float>(building.polygon.size());
+
+        MapTile& tile = getOrCreate(getCoordinate(center));
+
+        tile.mesh.append(Geometry::createBuilding(building));
+        tile.buildingCount++;
+
+        if (building.height > tile.bounds.max.y)
+            tile.bounds.max.y = building.height;
+    }
+
+    for (const RoadData& road : mapData.roads)
+    {
+        for (size_t i = 0; i + 1 < road.points.size(); ++i)
+        {
+            glm::vec2 a = road.points[i];
+            glm::vec2 b = road.points[i + 1];
+            glm::vec2 center = (a + b) * 0.5f;
+
+            MapTile& tile = getOrCreate(getCoordinate(center));
+
+            tile.mesh.append(Geometry::createRoadSegment(a, b, road.width));
+            tile.roadSegmentCount++;
+        }
+    }
 }
