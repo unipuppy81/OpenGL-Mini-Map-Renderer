@@ -14,6 +14,7 @@ public:
 
     glm::mat4 getViewMatrix() const;
     float getFov() const;
+    void follow(glm::vec2 target);
 
 private:
     glm::vec3 position;

@@ -85,6 +85,10 @@ Renderer::~Renderer()
         glDeleteVertexArrays(1, &destinationMesh.VAO);
         glDeleteBuffers(1, &destinationMesh.VBO);
         glDeleteBuffers(1, &destinationMesh.EBO);
+
+        glDeleteVertexArrays(1, &vehicleMesh.VAO);
+        glDeleteBuffers(1, &vehicleMesh.VBO);
+        glDeleteBuffers(1, &vehicleMesh.EBO);
     }
 
     glDeleteProgram(shaderProgram);
@@ -110,7 +114,7 @@ unsigned int Renderer::compileShader(unsigned int type, const char* source)
     return shader;
 }
 
-FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection, bool cullingEnabled)
+FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection, bool cullingEnabled, glm::vec2 vehiclePosition, float vehicleHeading)
 {
     FrameStats stats;
 
@@ -138,6 +142,7 @@ FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, c
         stats.renderedVertices += mesh.vertexCount;
     }
 
+    // route
     if (routeMesh.indexCount > 0) 
     {
         glBindVertexArray(routeMesh.VAO);
@@ -147,6 +152,7 @@ FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, c
         stats.renderedVertices += routeMesh.vertexCount;
     }
 
+    // destination
     if (destinationMesh.indexCount > 0) {
         glBindVertexArray(destinationMesh.VAO);
         glDrawElements(GL_TRIANGLES, destinationMesh.indexCount, GL_UNSIGNED_INT, nullptr);
@@ -155,12 +161,29 @@ FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, c
         stats.renderedVertices += destinationMesh.vertexCount;
     }
 
+    // vehicle
+    updateVehicle(vehiclePosition, vehicleHeading);
+    if (vehicleMesh.indexCount > 0) {
+        glBindVertexArray(vehicleMesh.VAO);
+        glDrawElements(GL_TRIANGLES, vehicleMesh.indexCount, GL_UNSIGNED_INT, nullptr);
+        stats.drawCalls++;
+        stats.renderedVertices += vehicleMesh.vertexCount;
+    }
+
     return stats;
 }
 
 void Renderer::uploadMesh(GpuMesh& gpuMesh, const MeshData& mesh)
 {
+    if (gpuMesh.VAO != 0) {
+        glDeleteVertexArrays(1, &gpuMesh.VAO);
+        glDeleteBuffers(1, &gpuMesh.VBO);
+        glDeleteBuffers(1, &gpuMesh.EBO);
+        gpuMesh = {};
+    }
+
     gpuMesh.indexCount = static_cast<int>(mesh.indices.size());
+    gpuMesh.vertexCount = mesh.vertices.size();
 
     glGenVertexArrays(1, &gpuMesh.VAO);
     glGenBuffers(1, &gpuMesh.VBO);
@@ -228,4 +251,36 @@ void Renderer::uploadDestination(glm::vec2 position, float buildingHeight)
     marker.indices = { 0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1 };
 
     uploadMesh(destinationMesh, marker);
+}
+
+void Renderer::updateVehicle(glm::vec2 position, float heading)
+{
+    float c = cos(heading);
+    float s = sin(heading);
+
+    auto transform = [&](glm::vec2 local) {
+        return glm::vec3(
+            position.x + local.x * c - local.y * s,
+            0.42f,
+            position.y + local.x * s + local.y * c
+        );
+        };
+
+    glm::vec3 color(0.16f, 0.88f, 1.0f);
+
+    MeshData vehicle;
+    vehicle.vertices = {
+        {transform({5.2f, 0.0f}), {0, 1, 0}, color},
+        {transform({-4.0f, -3.4f}), {0, 1, 0}, color},
+        {transform({-4.0f, 3.4f}), {0, 1, 0}, color}
+    };
+    vehicle.indices = { 0, 1, 2 };
+
+    if (vehicleMesh.VAO == 0) 
+        uploadMesh(vehicleMesh, vehicle);
+    else 
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, vehicleMesh.VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, vehicle.vertices.size() * sizeof(Vertex), vehicle.vertices.data());
+    }
 }

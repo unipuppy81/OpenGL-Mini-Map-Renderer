@@ -81,3 +81,9 @@ float Camera::getFov() const
 {
     return fov;
 }
+
+void Camera::follow(glm::vec2 target)
+{
+    position = glm::vec3(target.x, 90.0f, target.y + 120.0f);
+    front = glm::normalize(glm::vec3(target.x, 0.0f, target.y) - position);
+}

@@ -23,7 +23,7 @@ public:
     Renderer(const vector<MapTile>& tiles);
     ~Renderer();
 
-    FrameStats draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection, bool cullingEnabled);
+    FrameStats draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection, bool cullingEnabled, glm::vec2 vehiclePosition, float vehicleHeading);
     void uploadRoute(const vector<glm::vec2>& points, float width = 3.2f);
     void uploadDestination(glm::vec2 position, float buildingHeight);
 
@@ -44,7 +44,9 @@ private:
     vector<GpuMesh> meshes;
     GpuMesh routeMesh;
     GpuMesh destinationMesh;
+    GpuMesh vehicleMesh;
 
     unsigned int compileShader(unsigned int type, const char* source);
     void uploadMesh(GpuMesh& gpuMesh, const MeshData& mesh);
+    void updateVehicle(glm::vec2 position, float heading);
 };
