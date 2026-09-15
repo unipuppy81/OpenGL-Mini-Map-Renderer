@@ -10,6 +10,65 @@
 
 using json = nlohmann::json;
 
+constexpr double METERS_PER_LATITUDE = 110540.0;
+constexpr double METERS_PER_LONGITUDE = 111320.0;
+constexpr double PI = 3.14159265358979323846;
+
+void convertToLocalMeters(MapData& mapData)
+{
+    double minLon = std::numeric_limits<double>::max();
+    double maxLon = std::numeric_limits<double>::lowest();
+    double minLat = std::numeric_limits<double>::max();
+    double maxLat = std::numeric_limits<double>::lowest();
+
+    for (const auto& building : mapData.buildings)
+    {
+        for (const auto& point : building.polygon)
+        {
+            minLon = std::min(minLon, (double)point.x);
+            maxLon = std::max(maxLon, (double)point.x);
+            minLat = std::min(minLat, (double)point.y);
+            maxLat = std::max(maxLat, (double)point.y);
+        }
+    }
+
+    for (const auto& road : mapData.roads)
+    {
+        for (const auto& point : road.points)
+        {
+            minLon = std::min(minLon, (double)point.x);
+            maxLon = std::max(maxLon, (double)point.x);
+            minLat = std::min(minLat, (double)point.y);
+            maxLat = std::max(maxLat, (double)point.y);
+        }
+    }
+
+    if (minLon > maxLon) return;
+
+    double originLon = (minLon + maxLon) * 0.5;
+    double originLat = (minLat + maxLat) * 0.5;
+
+    double longitudeScale = METERS_PER_LONGITUDE * std::cos(originLat * PI / 180.0);
+
+    for (auto& building : mapData.buildings)
+    {
+        for (auto& point : building.polygon)
+        {
+            point.x = (float)((point.x - originLon) * longitudeScale);
+            point.y = (float)((point.y - originLat) * METERS_PER_LATITUDE);
+        }
+    }
+
+    for (auto& road : mapData.roads)
+    {
+        for (auto& point : road.points)
+        {
+            point.x = (float)((point.x - originLon) * longitudeScale);
+            point.y = (float)((point.y - originLat) * METERS_PER_LATITUDE);
+        }
+    }
+}
+
 float getFloatProperty(const json& properties, const char* name, float defaultValue)
 {
     if (!properties.contains(name)) return defaultValue;
@@ -116,6 +175,8 @@ MapData GeoJsonLoader::load(const std::string& path)
             loadLineString(coordinates, properties, mapData);
         }
     }
+
+    convertToLocalMeters(mapData);
 
     return mapData;
 }

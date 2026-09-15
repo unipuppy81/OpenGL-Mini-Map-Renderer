@@ -20,3 +20,16 @@ struct MapData
     std::vector<BuildingData> buildings;
     std::vector<RoadData> roads;
 };
+
+struct Vertex
+{
+    glm::vec3 position{};
+    glm::vec3 normal{};
+    glm::vec3 color{};
+};
+
+struct MeshData
+{
+    std::vector<Vertex> vertices;
+    std::vector<unsigned int> indices;
+};

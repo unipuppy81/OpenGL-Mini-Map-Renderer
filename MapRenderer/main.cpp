@@ -9,9 +9,12 @@
 #include "Camera.hpp"
 #include "Renderer.hpp"
 #include "GeoJsonLoader.hpp"
+#include "Geometry.hpp"
 
 #include <iostream>
 #include <filesystem>
+
+using namespace std;
 
 void framebufferCallback(GLFWwindow*, int width, int height)
 {
@@ -22,7 +25,7 @@ int main()
 {
     if (!glfwInit())
     {
-        std::cout << "Failed to initialize GLFW\n";
+        cout << "Failed to initialize GLFW\n";
         return -1;
     }
 
@@ -34,7 +37,7 @@ int main()
 
     if (!window)
     {
-        std::cout << "Failed to create GLFW window\n";
+        cout << "Failed to create GLFW window\n";
         glfwTerminate();
         return -1;
     }
@@ -43,7 +46,7 @@ int main()
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
-        std::cout << "Failed to initialize GLAD\n";
+        cout << "Failed to initialize GLAD\n";
         glfwTerminate();
         return -1;
     }
@@ -71,32 +74,36 @@ int main()
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    std::cout << "Current path: " << std::filesystem::current_path() << '\n';
-    std::cout << "GeoJSON exists: " << std::filesystem::exists("data/map.geojson") << '\n';
+    cout << "Current path: " << filesystem::current_path() << '\n';
+    cout << "GeoJSON exists: " << filesystem::exists("data/map.geojson") << '\n';
 
 
 
-    // GeoJSON Load
     MapData mapData;
-
-
-    std::cout << std::filesystem::current_path() << '\n';
-    std::cout << std::filesystem::exists("../data/map.geojson") << '\n';
+    MeshData buildingMesh;
 
     try
     {
         mapData = GeoJsonLoader::load("../data/map.geojson");
 
-        std::cout << "Buildings: " << mapData.buildings.size() << '\n';
-        std::cout << "Roads: " << mapData.roads.size() << '\n';
+        cout << "Buildings: " << mapData.buildings.size() << '\n';
+        cout << "Roads: " << mapData.roads.size() << '\n';
+
+        if (!mapData.buildings.empty())
+        {
+            buildingMesh = Geometry::createBuilding(mapData.buildings[0]);
+
+            cout << "Vertices: " << buildingMesh.vertices.size() << '\n';
+            cout << "Indices: " << buildingMesh.indices.size() << '\n';
+        }
     }
-    catch (const std::exception& e)
+    catch (const exception& e)
     {
-        std::cout << e.what() << '\n';
+        cout << e.what() << '\n';
     }
 
     {
-        Renderer renderer;
+        Renderer renderer(buildingMesh);
 
         float lastFrame = 0.0f;
 
@@ -125,7 +132,7 @@ int main()
                 glm::radians(camera.getFov()),
                 aspect,
                 0.1f,
-                100.0f
+                1000.0f
             );
 
             renderer.draw(view, projection);

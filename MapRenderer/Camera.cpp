@@ -3,12 +3,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 
-Camera::Camera() : 
-    position(0.0f, 0.0f, 3.0f),
-    front(0.0f, 0.0f, -1.0f),
+Camera::Camera() :
+    position(0.0f, 120.0f, 180.0f),
+    front(glm::normalize(glm::vec3(0.0f, -120.0f, -180.0f))),
     up(0.0f, 1.0f, 0.0f),
     yaw(-90.0f),
-    pitch(0.0f),
+    pitch(-33.7f),
     fov(45.0f),
     lastX(400.0f),
     lastY(300.0f),
