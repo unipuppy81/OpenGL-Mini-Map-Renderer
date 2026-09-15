@@ -1,9 +1,11 @@
 #include "Renderer.hpp"
+#include "Frustum.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
-
 #include <cstddef>
 #include <iostream>
+
+
 
 using namespace std;
 
@@ -47,10 +49,8 @@ void main()
 }
 )";
 
-Renderer::Renderer(const MeshData& mesh)
+Renderer::Renderer(const vector<MapTile>& tiles)
 {
-    indexCount = static_cast<int>(mesh.indices.size());
-
     unsigned int vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
     unsigned int fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
@@ -62,37 +62,23 @@ Renderer::Renderer(const MeshData& mesh)
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
-    glEnableVertexAttribArray(2);
-
-    glBindVertexArray(0);
-
     mvpLocation = glGetUniformLocation(shaderProgram, "uMVP");
+
+    meshes.resize(tiles.size());
+
+    for (size_t i = 0; i < tiles.size(); ++i)
+        uploadMesh(meshes[i], tiles[i].mesh);
 }
 
 Renderer::~Renderer()
 {
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    for (GpuMesh& mesh : meshes)
+    {
+        glDeleteVertexArrays(1, &mesh.VAO);
+        glDeleteBuffers(1, &mesh.VBO);
+        glDeleteBuffers(1, &mesh.EBO);
+    }
+
     glDeleteProgram(shaderProgram);
 }
 
@@ -116,14 +102,58 @@ unsigned int Renderer::compileShader(unsigned int type, const char* source)
     return shader;
 }
 
-void Renderer::draw(const glm::mat4& view, const glm::mat4& projection)
+FrameStats Renderer::draw(const vector<MapTile>& tiles, const glm::mat4& view, const glm::mat4& projection)
 {
-    glm::mat4 model(1.0f);
-    glm::mat4 mvp = projection * view * model;
+    FrameStats stats;
+
+    glm::mat4 viewProjection = projection * view;
+    Frustum frustum(viewProjection);
 
     glUseProgram(shaderProgram);
-    glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, glm::value_ptr(viewProjection));
 
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
+    for (size_t i = 0; i < meshes.size(); ++i)
+    {
+        if (!frustum.intersects(tiles[i].bounds)) continue;
+
+        stats.visibleTiles++;
+
+        const GpuMesh& mesh = meshes[i];
+        if (mesh.indexCount == 0) continue;
+
+        glBindVertexArray(mesh.VAO);
+        glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+
+        stats.drawCalls++;
+        stats.renderedVertices += mesh.vertexCount;
+    }
+
+    return stats;
+}
+void Renderer::uploadMesh(GpuMesh& gpuMesh, const MeshData& mesh)
+{
+    gpuMesh.indexCount = static_cast<int>(mesh.indices.size());
+
+    glGenVertexArrays(1, &gpuMesh.VAO);
+    glGenBuffers(1, &gpuMesh.VBO);
+    glGenBuffers(1, &gpuMesh.EBO);
+
+    glBindVertexArray(gpuMesh.VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gpuMesh.VBO);
+    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(Vertex), mesh.vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuMesh.EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+    glEnableVertexAttribArray(2);
+
+    glBindVertexArray(0);
 }

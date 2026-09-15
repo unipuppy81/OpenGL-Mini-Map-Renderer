@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Frustum.hpp" />
     <ClInclude Include="GeoJsonLoader.hpp" />
     <ClInclude Include="Geometry.hpp" />
     <ClInclude Include="main.hpp" />
@@ -148,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="GeoJsonLoader.cpp" />
     <ClCompile Include="Geometry.cpp" />
     <ClCompile Include="glad.c" />

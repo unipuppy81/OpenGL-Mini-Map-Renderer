@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <filesystem>
+#include <sstream>
 
 using namespace std;
 
@@ -80,16 +81,15 @@ int main()
 
 
     MapData mapData;
-    MeshData mapMesh;
+    TileManager tileManager;
 
     try
     {
-        mapData = GeoJsonLoader::load("../data/map.geojson");
+        mapData = GeoJsonLoader::load("../data/sample_map.geojson");
 
         cout << "Buildings: " << mapData.buildings.size() << '\n';
         cout << "Roads: " << mapData.roads.size() << '\n';
 
-        TileManager tileManager;
         tileManager.build(mapData);
 
         for (const MapTile& tile : tileManager.getTiles())
@@ -97,12 +97,7 @@ int main()
             cout << "Tile: " << tile.coordinate.x << ", " << tile.coordinate.y
                 << " Buildings: " << tile.buildingCount
                 << " Roads: " << tile.roadSegmentCount << '\n';
-
-            mapMesh.append(tile.mesh);
         }
-
-        cout << "Total vertices: " << mapMesh.vertices.size() << '\n';
-        cout << "Total indices: " << mapMesh.indices.size() << '\n';
     }
     catch (const exception& e)
     {
@@ -110,7 +105,7 @@ int main()
     }
 
     {
-        Renderer renderer(mapMesh);
+        Renderer renderer(tileManager.getTiles());
 
         float lastFrame = 0.0f;
 
@@ -142,7 +137,16 @@ int main()
                 1000.0f
             );
 
-            renderer.draw(view, projection);
+            FrameStats stats = renderer.draw(tileManager.getTiles(), view, projection);
+
+            ostringstream title;
+            title << "Map Renderer"
+                << " | Tiles " << tileManager.getTiles().size()
+                << " | Visible " << stats.visibleTiles
+                << " | Draws " << stats.drawCalls
+                << " | Vertices " << stats.renderedVertices;
+
+            glfwSetWindowTitle(window, title.str().c_str());
 
             glfwSwapBuffers(window);
             glfwPollEvents();
