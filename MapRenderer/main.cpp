@@ -165,9 +165,6 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     cout << "Current path: " << filesystem::current_path() << '\n';
-    cout << "GeoJSON exists: " << filesystem::exists("data/sample_map.geojson") << '\n';
-
-
 
     MapData mapData;
     TileManager tileManager;
@@ -176,7 +173,7 @@ int main()
 
     try
     {
-        mapData = GeoJsonLoader::load("../data/sample_map.geojson");
+        mapData = GeoJsonLoader::load("../data/osm_sample.geojson");
 
         cout << "Buildings: " << mapData.buildings.size() << '\n';
         cout << "Roads: " << mapData.roads.size() << '\n';
