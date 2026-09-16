@@ -16,6 +16,8 @@ public:
     float getFov() const;
     void follow(glm::vec2 target);
 
+    void resetMouse();
+
 private:
     glm::vec3 position;
     glm::vec3 front;

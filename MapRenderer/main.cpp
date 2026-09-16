@@ -148,9 +148,7 @@ int main()
     Camera camera;
 
     glfwSetWindowUserPointer(window, &camera);
-
     glfwSetFramebufferSizeCallback(window, framebufferCallback);
-
     glfwSetCursorPosCallback(window, [](GLFWwindow* window, double x, double y) {
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) != GLFW_PRESS) return;
 
@@ -167,7 +165,7 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     cout << "Current path: " << filesystem::current_path() << '\n';
-    cout << "GeoJSON exists: " << filesystem::exists("data/test01.geojson") << '\n';
+    cout << "GeoJSON exists: " << filesystem::exists("data/sample_map.geojson") << '\n';
 
 
 
@@ -178,7 +176,7 @@ int main()
 
     try
     {
-        mapData = GeoJsonLoader::load("../data/test01.geojson");
+        mapData = GeoJsonLoader::load("../data/sample_map.geojson");
 
         cout << "Buildings: " << mapData.buildings.size() << '\n';
         cout << "Roads: " << mapData.roads.size() << '\n';
@@ -211,6 +209,8 @@ int main()
         float vehicleDistance = 0.0f;
 
         bool leftPressed = false;
+        bool rightPressed = false;
+
         bool cullingEnabled = true;
         bool fPressed = false;
 
@@ -254,11 +254,18 @@ int main()
 
             if (glfwGetKey(window, GLFW_KEY_T) == GLFW_RELEASE) tPressed = false;
 
+            bool rightDown = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
-            if (followVehicle) 
-                camera.follow(vehicle.position);
-            else 
-                camera.processInput(window, deltaTime);
+            if (rightDown && !rightPressed) 
+            {
+                camera.resetMouse();
+                followVehicle = false;
+            }
+
+            rightPressed = rightDown;
+
+            if (followVehicle) camera.follow(vehicle.position);
+            else camera.processInput(window, deltaTime);
 
             glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

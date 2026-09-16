@@ -18,7 +18,7 @@ Camera::Camera() :
 
 void Camera::processInput(GLFWwindow* window, float deltaTime)
 {
-    float speed = 3.0f * deltaTime;
+    float speed = 50.0f * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) position += front * speed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) position -= front * speed;
@@ -86,4 +86,9 @@ void Camera::follow(glm::vec2 target)
 {
     position = glm::vec3(target.x, 90.0f, target.y + 120.0f);
     front = glm::normalize(glm::vec3(target.x, 0.0f, target.y) - position);
+}
+
+void Camera::resetMouse()
+{
+    firstMouse = true;
 }

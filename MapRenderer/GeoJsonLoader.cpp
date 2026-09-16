@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include <stdexcept>
-
+#include <string>
 #include <iostream>
 #include <filesystem>
 
@@ -80,6 +80,49 @@ float getFloatProperty(const json& properties, const char* name, float defaultVa
     return defaultValue;
 }
 
+float getNumber(const json& properties, const char* key, float fallback)
+{
+    if (!properties.contains(key)) return fallback;
+
+    const auto& value = properties[key];
+
+    if (value.is_number()) return value.get<float>();
+
+    if (value.is_string()) {
+        try { return std::stof(value.get<std::string>()); }
+        catch (...) {}
+    }
+
+    return fallback;
+}
+
+float getBuildingHeight(const json& properties)
+{
+    float height = getNumber(properties, "height", -1.0f);
+    if (height > 0.0f) return height;
+
+    float levels = getNumber(properties, "building:levels", -1.0f);
+    if (levels > 0.0f) return levels * 3.0f;
+
+    return 10.0f;
+}
+
+float getRoadWidth(const json& properties)
+{
+    float width = getNumber(properties, "width", -1.0f);
+    if (width > 0.0f) return width;
+
+    std::string highway = properties.value("highway", "");
+
+    if (highway == "secondary") return 7.0f;
+    if (highway == "tertiary") return 6.0f;
+    if (highway == "tertiary_link") return 5.0f;
+    if (highway == "residential") return 4.0f;
+    if (highway == "service") return 3.0f;
+
+    return 3.0f;
+}
+
 void loadPolygon(const json& coordinates, const json& properties, MapData& mapData)
 {
     if (!coordinates.is_array() || coordinates.empty()) return;
@@ -90,7 +133,8 @@ void loadPolygon(const json& coordinates, const json& properties, MapData& mapDa
 
     BuildingData building;
 
-    building.height = getFloatProperty(properties, "height", 10.0f);
+    // building.height = getFloatProperty(properties, "height", 10.0f);
+    building.height = getBuildingHeight(properties);
 
     for (const auto& point : ring)
     {
@@ -117,7 +161,8 @@ void loadLineString(const json& coordinates, const json& properties, MapData& ma
 
     RoadData road;
 
-    road.width = getFloatProperty(properties, "width", 2.0f);
+    //road.width = getFloatProperty(properties, "width", 2.0f);
+    road.width = getRoadWidth(properties);
 
     for (const auto& point : coordinates)
     {
